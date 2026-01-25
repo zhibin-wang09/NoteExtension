@@ -1,0 +1,1 @@
+console.log("Note Extension content script injected")
