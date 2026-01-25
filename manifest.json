@@ -3,18 +3,21 @@
   "name": "NoteExtension",
   "version": "1.0",
   "description": "A Note Taking Extension",
-  "permissions": [],
+  "permissions": [
+    "tabs",
+    "contextMenus"
+  ],
   "action": {
     "default_popup": "index.html",
     "default_title": "NoteExtension"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.ts"
   },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.js"]
+      "js": ["content.ts"]
     }
   ]
 }
