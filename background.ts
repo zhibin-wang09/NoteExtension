@@ -25,9 +25,13 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     console.log(tab);
     chrome.tabs.sendMessage(
       tab!.id!,
-      { action: "open_note_taker" },
+      {
+        action: "open_note_taker",
+        selectedText: info.selectionText,
+        mediaType: info.mediaType,
+      },
       (response) => {
-        console.log(response)
+        console.log(response);
       },
     );
   }
