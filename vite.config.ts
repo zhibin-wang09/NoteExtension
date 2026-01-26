@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import path from 'path'
 import { crx } from '@crxjs/vite-plugin'
 import react from '@vitejs/plugin-react'
 import manifest from './manifest.config.ts'
@@ -12,4 +13,9 @@ export default defineConfig({
     react(),    
     tailwindcss(),
   ],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src")
+    }
+  }
 })

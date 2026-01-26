@@ -1,6 +1,33 @@
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 function App() {
+  const [isNoteBoxOpen, setIsNoteBoxOpen] = useState(false);
+  const [selectedText, setSelectedText] = useState("");
+
+  const saveBtn = () => {
+    console.log("Note saved");
+    setIsNoteBoxOpen(false);
+  };
+
+  const cancelBtn = () => {
+    console.log("Note cancelled");
+    setIsNoteBoxOpen(false);
+  };
+
   useEffect(() => {
     const messageListener = (request: any, _: any, sendResponse: any) => {
       if (request.action === "open_note_taker") {
@@ -15,7 +42,10 @@ function App() {
           });
           return;
         }
-        
+
+        setSelectedText(request.selectedText);
+        setIsNoteBoxOpen(true);
+
         sendResponse({ statusCode: 200 });
       }
       return true;
@@ -28,7 +58,37 @@ function App() {
     };
   }, []);
 
-  return <div className="text-red-500">Hello, Note Extension!</div>;
+  return (
+    <Dialog open={isNoteBoxOpen} onOpenChange={setIsNoteBoxOpen}>
+      <form>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogDescription>
+              Add Notes about the selected text.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4">
+            <div className="grid gap-3">
+              <Label htmlFor="selected-text">Selected Text:</Label>
+              <div className="-mx-4 max-h-[50vh] overflow-y-auto px-4">
+                <p id="selected-text" className="mb-4">{selectedText}</p>
+              </div>
+            </div>
+            <div className="grid gap-3">
+              <Label htmlFor="note">Notes</Label>
+              <Textarea id="note" name="note" placeholder="Take notes..." />
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button type="submit">Save changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </form>
+    </Dialog>
+  );
 }
 
 export default App;
