@@ -8,7 +8,7 @@
     "contextMenus"
   ],
   "action": {
-    "default_popup": "index.html",
+    "default_popup": "src/popup/index.html",
     "default_title": "NoteExtension"
   },
   "background": {
@@ -17,13 +17,13 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content.ts"],
-      "css": ["style.css"]
+      "js": ["src/content/main.tsx"],
+      "css": ["src/content/style.css"]
     }
   ],
   "web_accessible_resources": [
     {
-      "resources": ["style.css"],
+      "resources": ["src/content/style.css"],
       "matches": ["<all_urls>"]
     }
   ]
