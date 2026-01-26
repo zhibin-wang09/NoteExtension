@@ -16,6 +16,43 @@ import { Textarea } from "@/components/ui/textarea";
 function App() {
   const [isNoteBoxOpen, setIsNoteBoxOpen] = useState(false);
   const [selectedText, setSelectedText] = useState("");
+  const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    const dialogContent = (e.target as HTMLElement).closest('[role="dialog"]');
+    if (dialogContent) {
+      //   const rect = dialogContent.getBoundingClientRect();
+      //   setDragOffset({
+      //     x: e.clientX - rect.left,
+      //     y: e.clientY - rect.top,
+      //   });
+      setStartPosition({ x: e.clientX, y: e.clientY });
+
+      // get current dialog possition
+      setOffset({
+        x: dialogContent.getBoundingClientRect().left,
+        y: dialogContent.getBoundingClientRect().top,
+      });
+    }
+  };
+
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!isDragging) return;
+    setIsDragging(false);
+  };
+
+  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
+    if (e.clientX === 0 && e.clientY === 0) return;
+    if (!isDragging) return;
+
+    const newX = offset.x + (e.clientX - startPosition.x);
+    const newY = offset.y + (e.clientY - startPosition.y);
+
+    setOffset({ x: newX, y: newY });
+  };
 
   const saveBtn = () => {
     console.log("Note saved");
@@ -60,7 +97,18 @@ function App() {
   return createPortal(
     <Dialog open={isNoteBoxOpen} onOpenChange={setIsNoteBoxOpen}>
       <form className="z-1000">
-        <DialogContent className="flex flex-col m-4">
+        <DialogContent
+          className="flex flex-col m-4 cursor-grab active:cursor-grabbing"
+          draggable
+          onDragStart={handleDragStart}
+          onDrag={handleDrag}
+          onDragEnd={handleDragEnd}
+          style={{
+            position: "fixed",
+            left: offset.x,
+            top: offset.y,
+          }}
+        >
           <DialogHeader>
             <DialogTitle hidden>Add Note</DialogTitle>
             <DialogDescription>
