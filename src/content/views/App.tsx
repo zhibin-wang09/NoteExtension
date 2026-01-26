@@ -28,7 +28,7 @@ function App() {
     };
   }, []);
 
-  return <div>Hello, Note Extension!</div>;
+  return <div className="text-red-500">Hello, Note Extension!</div>;
 }
 
 export default App;
