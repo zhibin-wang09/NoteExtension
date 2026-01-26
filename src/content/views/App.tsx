@@ -16,43 +16,49 @@ import { Textarea } from "@/components/ui/textarea";
 function App() {
   const [isNoteBoxOpen, setIsNoteBoxOpen] = useState(false);
   const [selectedText, setSelectedText] = useState("");
-  const [startPosition, setStartPosition] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [startMouse, setStartMouse] = useState({ x: 0, y: 0 });
+  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     setIsDragging(true);
-    const dialogContent = (e.target as HTMLElement).closest('[role="dialog"]');
-    if (dialogContent) {
-      //   const rect = dialogContent.getBoundingClientRect();
-      //   setDragOffset({
-      //     x: e.clientX - rect.left,
-      //     y: e.clientY - rect.top,
-      //   });
-      setStartPosition({ x: e.clientX, y: e.clientY });
+    setStartMouse({ x: e.clientX, y: e.clientY });
+    setStartPos({ x: position.x, y: position.y });
+  };
 
-      // get current dialog possition
-      setOffset({
-        x: dialogContent.getBoundingClientRect().left,
-        y: dialogContent.getBoundingClientRect().top,
+  useEffect(() => {
+    if (!isDragging) return;
+
+    let frameId: number;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        const dx = e.clientX - startMouse.x;
+        const dy = e.clientY - startMouse.y;
+
+        setPosition({
+          x: startPos.x + dx,
+          y: startPos.y + dy,
+        });
       });
-    }
-  };
+    };
 
-  const handleDragEnd = (e: React.DragEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    setIsDragging(false);
-  };
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      cancelAnimationFrame(frameId);
+    };
 
-  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
-    if (e.clientX === 0 && e.clientY === 0) return;
-    if (!isDragging) return;
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
 
-    const newX = offset.x + (e.clientX - startPosition.x);
-    const newY = offset.y + (e.clientY - startPosition.y);
-
-    setOffset({ x: newX, y: newY });
-  };
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      cancelAnimationFrame(frameId);
+    };
+  }, [isDragging, startMouse, startPos]);
 
   const saveBtn = () => {
     console.log("Note saved");
@@ -63,6 +69,16 @@ function App() {
     console.log("Note cancelled");
     setIsNoteBoxOpen(false);
   };
+
+  useEffect(() => {
+    if (isNoteBoxOpen) {
+      // Set initial position to center-ish area
+      setPosition({
+        x: Math.max(0, (window.innerWidth - 425) / 2),
+        y: Math.max(0, (window.innerHeight - 300) / 2),
+      });
+    }
+  }, [isNoteBoxOpen]);
 
   useEffect(() => {
     const messageListener = (request: any, _: any, sendResponse: any) => {
@@ -98,25 +114,24 @@ function App() {
     <Dialog open={isNoteBoxOpen} onOpenChange={setIsNoteBoxOpen}>
       <form className="z-1000">
         <DialogContent
-          className="flex flex-col m-4 cursor-grab active:cursor-grabbing"
-          draggable
-          onDragStart={handleDragStart}
-          onDrag={handleDrag}
-          onDragEnd={handleDragEnd}
+          className="flex flex-col m-4"
           style={{
             position: "fixed",
-            left: offset.x,
-            top: offset.y,
+            transform: `translate(${position.x}px, ${position.y}px)`,
+            willChange: isDragging ? "transform" : "auto",
           }}
         >
-          <DialogHeader>
+          <DialogHeader 
+            onMouseDown={handleMouseDown}
+            className="cursor-grab active:cursor-grabbing select-none flex flex-row"
+          >
             <DialogTitle hidden>Add Note</DialogTitle>
             <DialogDescription>
               Add Notes about the selected text.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 my-4">
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 no-scrollbar -mx-4 max-h-[50vh] overflow-y-auto px-4">
               <Label htmlFor="selected-text">Selected Text:</Label>
               <div>
                 <p id="selected-text">{selectedText}</p>
