@@ -8,9 +8,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -60,21 +58,22 @@ function App() {
 
   return (
     <Dialog open={isNoteBoxOpen} onOpenChange={setIsNoteBoxOpen}>
-      <form>
-        <DialogContent className="sm:max-w-[425px]">
+      <form className="z-1000">
+        <DialogContent className="flex flex-col m-4">
           <DialogHeader>
+            <DialogTitle hidden>Add Note</DialogTitle>
             <DialogDescription>
               Add Notes about the selected text.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4">
-            <div className="grid gap-3">
+          <div className="flex flex-col gap-4 my-4">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="selected-text">Selected Text:</Label>
-              <div className="-mx-4 max-h-[50vh] overflow-y-auto px-4">
-                <p id="selected-text" className="mb-4">{selectedText}</p>
+              <div>
+                <p id="selected-text">{selectedText}</p>
               </div>
             </div>
-            <div className="grid gap-3">
+            <div className="flex flex-col gap-2">
               <Label htmlFor="note">Notes</Label>
               <Textarea id="note" name="note" placeholder="Take notes..." />
             </div>
