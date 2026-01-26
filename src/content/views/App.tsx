@@ -11,10 +11,19 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DndContext,
+  useDraggable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 
 function App() {
   const [isNoteBoxOpen, setIsNoteBoxOpen] = useState(false);
   const [selectedText, setSelectedText] = useState("");
+  const [dialogOffset, setDialogOffset] = useState({ x: 0, y: 0 });
 
   const saveBtn = () => {
     console.log("Note saved");
@@ -58,35 +67,55 @@ function App() {
 
   return (
     <Dialog open={isNoteBoxOpen} onOpenChange={setIsNoteBoxOpen}>
-      <form className="z-1000">
-        <DialogContent className="flex flex-col m-4">
-          <DialogHeader>
-            <DialogTitle hidden>Add Note</DialogTitle>
-            <DialogDescription>
-              Add Notes about the selected text.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4 my-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="selected-text">Selected Text:</Label>
-              <div>
-                <p id="selected-text">{selectedText}</p>
+      <DndContext>
+        <DraggableDialogContent>
+          <form className="z-1000">
+            <DialogContent className="flex flex-col m-4">
+              <DialogHeader>
+                <DialogTitle hidden>Add Note</DialogTitle>
+                <DialogDescription>
+                  Add Notes about the selected text.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="flex flex-col gap-4 my-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="selected-text">Selected Text:</Label>
+                  <div>
+                    <p id="selected-text">{selectedText}</p>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="note">Notes</Label>
+                  <Textarea id="note" name="note" placeholder="Take notes..." />
+                </div>
               </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="note">Notes</Label>
-              <Textarea id="note" name="note" placeholder="Take notes..." />
-            </div>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
-            </DialogClose>
-            <Button type="submit">Save changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </form>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button type="submit">Save changes</Button>
+              </DialogFooter>
+            </DialogContent>
+          </form>
+        </DraggableDialogContent>
+      </DndContext>
     </Dialog>
+  );
+}
+
+function DraggableDialogContent(props: any) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: "draggable-dialog",
+  });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...listeners} {...attributes}>
+      {props.children}
+    </div>
   );
 }
 
