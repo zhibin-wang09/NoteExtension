@@ -20,6 +20,7 @@ function App() {
   const [isDragging, setIsDragging] = useState(false);
   const [startMouse, setStartMouse] = useState({ x: 0, y: 0 });
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const [textArea, setTextArea] = useState("");
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     setIsDragging(true);
@@ -60,9 +61,14 @@ function App() {
     };
   }, [isDragging, startMouse, startPos]);
 
-  const saveBtn = () => {
-    console.log("Note saved");
+  const saveBtn = (e : React.FormEvent) => {
+    e.preventDefault();
+    chrome.storage.local.set({selectedText, textArea}).then(() => {
+      console.log("Note saved to storage");
+    });
     setIsNoteBoxOpen(false);
+    setTextArea("");
+    setSelectedText("");
   };
 
   const cancelBtn = () => {
@@ -112,7 +118,7 @@ function App() {
 
   return createPortal(
     <Dialog open={isNoteBoxOpen} onOpenChange={setIsNoteBoxOpen}>
-      <form className="z-1000">
+      <form className="z-1000" onSubmit={saveBtn}>
         <DialogContent
           className="flex flex-col m-4"
           style={{
@@ -121,7 +127,7 @@ function App() {
             willChange: isDragging ? "transform" : "auto",
           }}
         >
-          <DialogHeader 
+          <DialogHeader
             onMouseDown={handleMouseDown}
             className="cursor-grab active:cursor-grabbing select-none flex flex-row"
           >
@@ -139,14 +145,20 @@ function App() {
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="note">Notes</Label>
-              <Textarea id="note" name="note" placeholder="Take notes..." />
+              <Textarea
+                id="note"
+                name="note"
+                placeholder="Take notes..."
+                value={textArea}
+                onChange={(e) => setTextArea(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="outline">Cancel</Button>
+              <Button variant="outline" onClick={cancelBtn}>Cancel</Button>
             </DialogClose>
-            <Button type="submit">Save changes</Button>
+            <Button type="submit" onClick={saveBtn}>Save changes</Button>
           </DialogFooter>
         </DialogContent>
       </form>

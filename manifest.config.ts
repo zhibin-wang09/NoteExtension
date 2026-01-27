@@ -5,7 +5,7 @@ export default defineManifest({
   name: "NoteExtension",
   version: "1.0",
   description: "A Note Taking Extension",
-  permissions: ["tabs", "contextMenus"],
+  permissions: ["tabs", "contextMenus", "storage"],
   action: {
     default_popup: "src/popup/index.html",
     default_title: "NoteExtension",
