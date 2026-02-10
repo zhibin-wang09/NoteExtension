@@ -1,42 +1,63 @@
-import { Button } from "@/components/ui/button"
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from "@/components/ui/item";
+
+
+interface Note {
+  selectedText: string;
+  textArea: string;
+}
 
 export function App() {
+  const [notes, setNotes] = useState<Note[]>([]);
+
+  useEffect(() => {
+    chrome.storage.local.get(null, (items: Record<string, any>) => {
+      const tmpNotes: Note[] = [];
+      for (const [key, value] of Object.entries(items)) {
+        console.log(items)
+          tmpNotes.push({selectedText: key, textArea: value});
+      }
+      setNotes(tmpNotes);
+    });
+  }, []);
+
+  function deleteNote(selectedText: string) {
+    chrome.storage.local.remove([selectedText])
+    setNotes(notes.filter(note => note.selectedText !== selectedText))
+  }
+
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline">Scrollable Content</Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Scrollable Content</DialogTitle>
-          <DialogDescription>
-            This is a dialog with scrollable content.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="no-scrollbar -mx-4 max-h-[50vh] overflow-y-auto px-4">
-          {Array.from({ length: 10 }).map((_, index) => (
-            <p key={index} className="mb-4 leading-normal">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do
-              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-              enim ad minim veniam, quis nostrud exercitation ullamco laboris
-              nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-              reprehenderit in voluptate velit esse cillum dolore eu fugiat
-              nulla pariatur. Excepteur sint occaecat cupidatat non proident,
-              sunt in culpa qui officia deserunt mollit anim id est laborum.
-            </p>
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
+    <ScrollArea>
+      <ItemGroup className="flex flex-col gap-6 w-100 p-8">
+        {notes.map((note) => (
+          <Item key={note.selectedText} variant="outline">
+            <ItemContent>
+              <ItemTitle>{note.selectedText}</ItemTitle>
+              <ItemDescription>{note.textArea}</ItemDescription>
+            </ItemContent>
+            <ItemActions>
+              <Button variant="outline" size="sm">
+                Edit
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => deleteNote(note.selectedText)}>
+                Delete
+              </Button>
+            </ItemActions>
+          </Item>
+        ))}
+      </ItemGroup>
+    </ScrollArea>
+  );
 }
 
 export default App;

@@ -63,7 +63,7 @@ function App() {
 
   const saveBtn = (e : React.FormEvent) => {
     e.preventDefault();
-    chrome.storage.local.set({selectedText, textArea}).then(() => {
+    chrome.storage.local.set({[firstCharCap(selectedText)]: firstCharCap(textArea)}).then(() => {
       console.log("Note saved to storage");
     });
     setIsNoteBoxOpen(false);
@@ -165,6 +165,10 @@ function App() {
     </Dialog>,
     document.body,
   );
+}
+
+function firstCharCap(string: string){
+  return string.charAt(0).toUpperCase() + string.substring(1)
 }
 
 export default App;
