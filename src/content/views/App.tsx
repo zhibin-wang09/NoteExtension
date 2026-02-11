@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { firstCharCap } from "@/util/util";
 
 function App() {
   const [isNoteBoxOpen, setIsNoteBoxOpen] = useState(false);
@@ -167,8 +168,5 @@ function App() {
   );
 }
 
-function firstCharCap(string: string){
-  return string.charAt(0).toUpperCase() + string.substring(1)
-}
 
 export default App;
