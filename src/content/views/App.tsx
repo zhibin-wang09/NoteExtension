@@ -5,7 +5,6 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -14,6 +13,16 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { firstCharCap } from "@/util/util";
 import type { StoredNote } from "@/types/note";
+
+function removeHighlight(noteId: string): void {
+  const marks = document.querySelectorAll(`mark[data-note-id="${noteId}"]`);
+  for (const mark of marks) {
+    const parent = mark.parentNode;
+    if (!parent) continue;
+    parent.replaceChild(document.createTextNode(mark.textContent ?? ""), mark);
+    parent.normalize();
+  }
+}
 
 function highlightText(text: string, noteId: string): void {
   if (!text || document.querySelector(`mark[data-note-id="${noteId}"]`)) return;
@@ -58,7 +67,7 @@ function highlightText(text: string, noteId: string): void {
     const mark = document.createElement("mark");
     mark.dataset.noteId = noteId;
     mark.textContent = matched;
-    mark.style.cssText = "background-color: yellow !important; color: inherit !important; cursor: pointer !important;";
+    mark.style.cssText = "background-color: yellow !important; color: black !important; cursor: pointer !important;";
 
     const parent = node.parentNode!;
     const before = content.slice(0, nodeMatchStart);
@@ -165,7 +174,9 @@ function App({ portalContainer }: { portalContainer: HTMLElement }) {
     if (!tooltipNote) return;
 
     const handleMouseDown = (e: MouseEvent) => {
-      if (!tooltipRef.current?.contains(e.target as Node)) setTooltipNote(null);
+      if (!tooltipRef.current || !e.composedPath().includes(tooltipRef.current)) {
+        setTooltipNote(null);
+      }
     };
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setTooltipNote(null);
@@ -223,6 +234,21 @@ function App({ portalContainer }: { portalContainer: HTMLElement }) {
         sendResponse({ statusCode: 200 });
       }
 
+      if (request.action === "remove_highlight") {
+        removeHighlight(request.noteId);
+        highlightedNotesRef.current = highlightedNotesRef.current.filter(
+          (n) => n.id !== request.noteId
+        );
+        sendResponse({ statusCode: 200 });
+      }
+
+      if (request.action === "update_note") {
+        highlightedNotesRef.current = highlightedNotesRef.current.map((n) =>
+          n.id === request.noteId ? { ...n, noteText: request.noteText } : n
+        );
+        sendResponse({ statusCode: 200 });
+      }
+
       return true;
     };
 
@@ -234,13 +260,13 @@ function App({ portalContainer }: { portalContainer: HTMLElement }) {
     <>
       <Dialog open={isNoteBoxOpen} onOpenChange={setIsNoteBoxOpen}>
         <form className="z-1000" onSubmit={saveBtn}>
-          <DialogContent ref={dialogRef} className="flex flex-col m-4" container={portalContainer}>
+          <DialogContent ref={dialogRef} className="flex flex-col m-4" container={portalContainer} aria-describedby="note-dialog-description">
             <DialogHeader
               onMouseDown={handleMouseDown}
               className="cursor-grab active:cursor-grabbing select-none flex flex-row"
             >
               <DialogTitle className="sr-only">Add Note</DialogTitle>
-              <DialogDescription>Add Notes about the selected text.</DialogDescription>
+              <p id="note-dialog-description" className="text-muted-foreground text-sm">Add Notes about the selected text.</p>
             </DialogHeader>
             <div className="flex flex-col gap-4 my-4">
               <div className="flex flex-col gap-2 no-scrollbar -mx-4 max-h-[50vh] overflow-y-auto px-4">

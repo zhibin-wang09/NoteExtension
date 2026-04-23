@@ -40,14 +40,21 @@ export function App() {
     });
   }, []);
 
+  function sendToActiveTab(message: Record<string, unknown>) {
+    chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+      if (tab?.id) chrome.tabs.sendMessage(tab.id, message);
+    });
+  }
+
   function deleteNote(url: string, id: string) {
     chrome.storage.local.get(url, (result) => {
       const existing = (result[url] as StoredNote[]) ?? [];
       const updated = existing.filter((n) => n.id !== id);
+      const afterWrite = () => sendToActiveTab({ action: "remove_highlight", noteId: id });
       if (updated.length === 0) {
-        chrome.storage.local.remove(url);
+        chrome.storage.local.remove(url, afterWrite);
       } else {
-        chrome.storage.local.set({ [url]: updated });
+        chrome.storage.local.set({ [url]: updated }, afterWrite);
       }
     });
     setNotes((prev) => prev.filter((n) => !(n.url === url && n.id === id)));
@@ -65,7 +72,9 @@ export function App() {
       const updated = existing.map((n) =>
         n.id === id ? { ...n, noteText: saved } : n
       );
-      chrome.storage.local.set({ [url]: updated });
+      chrome.storage.local.set({ [url]: updated }, () =>
+        sendToActiveTab({ action: "update_note", noteId: id, noteText: saved })
+      );
     });
     setNotes((prev) =>
       prev.map((n) =>
@@ -94,7 +103,7 @@ export function App() {
   function renderNote(note: PopupNote) {
     const isEditing = editingId === note.id;
     return (
-      <Item key={note.id} variant="outline">
+      <Item key={note.id} variant="outline" className="flex-col items-start">
         <ItemContent>
           <ItemTitle>{note.selectedText}</ItemTitle>
           {isEditing ? (

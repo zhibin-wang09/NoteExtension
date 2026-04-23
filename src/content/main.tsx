@@ -25,6 +25,7 @@ const shadowPreamble = `
   line-height: 1.5;
   -webkit-text-size-adjust: 100%;
   tab-size: 4;
+  color: var(--foreground);
 }
 [data-slot="textarea"] {
   border: 1px solid oklch(0.87 0 0);
