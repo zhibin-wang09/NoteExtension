@@ -6,9 +6,19 @@ export default defineManifest({
   version: "1.0",
   description: "A Note Taking Extension",
   permissions: ["tabs", "contextMenus", "storage"],
+  icons: {
+    16: "public/icons/icon16.png",
+    48: "public/icons/icon48.png",
+    128: "public/icons/icon128.png",
+  },
   action: {
     default_popup: "src/popup/index.html",
     default_title: "NoteExtension",
+    default_icon: {
+      16: "public/icons/icon16.png",
+      48: "public/icons/icon48.png",
+      128: "public/icons/icon128.png",
+    },
   },
   background: {
     service_worker: "background.ts",
