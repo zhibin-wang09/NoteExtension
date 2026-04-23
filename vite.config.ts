@@ -1,10 +1,10 @@
 import { defineConfig } from 'vite'
-import { crx, type ManifestV3Export } from '@crxjs/vite-plugin'
+import path from 'path'
+import { crx } from '@crxjs/vite-plugin'
 import react from '@vitejs/plugin-react'
-import man from './manifest.json'
+import manifest from './manifest.config.ts'
 import tailwindcss from '@tailwindcss/vite'
 
-const manifest = man as ManifestV3Export
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -13,4 +13,9 @@ export default defineConfig({
     react(),    
     tailwindcss(),
   ],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src")
+    }
+  }
 })
