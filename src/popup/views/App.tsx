@@ -114,7 +114,7 @@ export function App() {
               className="mt-2"
             />
           ) : (
-            <ItemDescription>{note.noteText}</ItemDescription>
+            <ItemDescription className="line-clamp-none max-h-32 overflow-y-auto">{note.noteText}</ItemDescription>
           )}
         </ItemContent>
         <ItemActions>
