@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Item,
@@ -10,95 +9,194 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item";
-
 import { firstCharCap } from "@/util/util";
 import { Textarea } from "@/components/ui/textarea";
+import type { StoredNote } from "@/types/note";
 
-interface Note {
-  selectedText: string;
-  textArea: string;
-}
+type PopupNote = StoredNote & { url: string };
 
 export function App() {
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [notes, setNotes] = useState<PopupNote[]>([]);
+  const [currentUrl, setCurrentUrl] = useState<string>("");
+  const [showAll, setShowAll] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState<string>("");
 
   useEffect(() => {
-    chrome.storage.local.get(null, (items: Record<string, any>) => {
-      const tmpNotes: Note[] = [];
-      for (const [key, value] of Object.entries(items)) {
-          tmpNotes.push({selectedText: key, textArea: value});
+    chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+      setCurrentUrl(tab?.url ?? "");
+    });
+
+    chrome.storage.local.get(null, (items: Record<string, StoredNote[]>) => {
+      const flat: PopupNote[] = [];
+      for (const [url, storedNotes] of Object.entries(items)) {
+        if (Array.isArray(storedNotes)) {
+          for (const note of storedNotes) {
+            flat.push({ ...note, url });
+          }
+        }
       }
-      setNotes(tmpNotes);
+      setNotes(flat);
     });
   }, []);
 
-  function deleteNote(selectedText: string) {
-    chrome.storage.local.remove([selectedText])
-    setNotes(notes.filter(note => note.selectedText !== selectedText))
+  function deleteNote(url: string, id: string) {
+    chrome.storage.local.get(url, (result) => {
+      const existing = (result[url] as StoredNote[]) ?? [];
+      const updated = existing.filter((n) => n.id !== id);
+      if (updated.length === 0) {
+        chrome.storage.local.remove(url);
+      } else {
+        chrome.storage.local.set({ [url]: updated });
+      }
+    });
+    setNotes((prev) => prev.filter((n) => !(n.url === url && n.id === id)));
   }
 
-  function editNote(index: number) {
-    setEditingIndex(index);
-    setEditText(notes[index].textArea);
+  function startEdit(note: PopupNote) {
+    setEditingId(note.id);
+    setEditText(note.noteText);
   }
 
-  function saveNote(index: number, selectedText: string) {
-    const updatedNotes = [...notes];
-    updatedNotes[index].textArea = editText;
-    setNotes(updatedNotes);
-    chrome.storage.local.set({[selectedText]: firstCharCap(editText)});
-    setEditingIndex(null);
+  function saveNote(url: string, id: string) {
+    const saved = firstCharCap(editText);
+    chrome.storage.local.get(url, (result) => {
+      const existing = (result[url] as StoredNote[]) ?? [];
+      const updated = existing.map((n) =>
+        n.id === id ? { ...n, noteText: saved } : n
+      );
+      chrome.storage.local.set({ [url]: updated });
+    });
+    setNotes((prev) =>
+      prev.map((n) =>
+        n.url === url && n.id === id ? { ...n, noteText: saved } : n
+      )
+    );
+    setEditingId(null);
   }
 
   function cancelEdit() {
-    setEditingIndex(null);
+    setEditingId(null);
     setEditText("");
   }
 
+  function highlightNote(note: PopupNote) {
+    chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+      if (!tab?.id) return;
+      chrome.tabs.sendMessage(tab.id, {
+        action: "highlight_note",
+        noteId: note.id,
+        selectedText: note.selectedText,
+      });
+    });
+  }
+
+  function renderNote(note: PopupNote) {
+    const isEditing = editingId === note.id;
+    return (
+      <Item key={note.id} variant="outline">
+        <ItemContent>
+          <ItemTitle>{note.selectedText}</ItemTitle>
+          {isEditing ? (
+            <Textarea
+              placeholder="Edit your note..."
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              className="mt-2"
+            />
+          ) : (
+            <ItemDescription>{note.noteText}</ItemDescription>
+          )}
+        </ItemContent>
+        <ItemActions>
+          {isEditing ? (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => saveNote(note.url, note.id)}
+              >
+                Save
+              </Button>
+              <Button variant="outline" size="sm" onClick={cancelEdit}>
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => highlightNote(note)}
+              >
+                Highlight
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => startEdit(note)}
+              >
+                Edit
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => deleteNote(note.url, note.id)}
+              >
+                Delete
+              </Button>
+            </>
+          )}
+        </ItemActions>
+      </Item>
+    );
+  }
+
+  const visibleNotes = showAll
+    ? notes
+    : notes.filter((n) => n.url === currentUrl);
+
+  const grouped = notes.reduce<Record<string, PopupNote[]>>((acc, note) => {
+    (acc[note.url] ??= []).push(note);
+    return acc;
+  }, {});
+
   return (
     <ScrollArea>
-      <ItemGroup className="flex flex-col gap-6 w-100 p-8">
-        {notes.map((note, index) => (
-          <Item key={note.selectedText} variant="outline">
-            <ItemContent>
-              <ItemTitle>{note.selectedText}</ItemTitle>
-              {editingIndex === index ? (
-                <Textarea
-                  placeholder="Edit your note..."
-                  value={editText}
-                  onChange={(e) => setEditText(e.target.value)}
-                  className="mt-2"
-                />
-              ) : (
-                <ItemDescription>{note.textArea}</ItemDescription>
-              )}
-            </ItemContent>
-            <ItemActions>
-              {editingIndex === index ? (
-                <>
-                  <Button variant="outline" size="sm" onClick={() => saveNote(index, note.selectedText)}>
-                    Save
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={cancelEdit}>
-                    Cancel
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button variant="outline" size="sm" onClick={() => editNote(index)}>
-                    Edit
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => deleteNote(note.selectedText)}>
-                    Delete
-                  </Button>
-                </>
-              )}
-            </ItemActions>
-          </Item>
-        ))}
-      </ItemGroup>
+      <div className="flex justify-end px-8 pt-4">
+        <Button
+          variant={showAll ? "default" : "outline"}
+          size="sm"
+          onClick={() => setShowAll((prev) => !prev)}
+        >
+          {showAll ? "All pages" : "This page"}
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-6 w-100 p-8 pt-4">
+        {showAll ? (
+          Object.entries(grouped).map(([url, groupNotes]) => (
+            <div key={url}>
+              <p className="text-xs text-muted-foreground px-1 pb-2 truncate">
+                {url}
+              </p>
+              <ItemGroup className="flex flex-col gap-2">
+                {groupNotes.map(renderNote)}
+              </ItemGroup>
+            </div>
+          ))
+        ) : (
+          <ItemGroup className="flex flex-col gap-2">
+            {visibleNotes.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No notes for this page.
+              </p>
+            ) : (
+              visibleNotes.map(renderNote)
+            )}
+          </ItemGroup>
+        )}
+      </div>
     </ScrollArea>
   );
 }

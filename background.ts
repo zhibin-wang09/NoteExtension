@@ -29,6 +29,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
         action: "open_note_taker",
         selectedText: info.selectionText,
         mediaType: info.mediaType,
+        url: tab!.url,
       },
       (response) => {
         console.log(response);
