@@ -4,7 +4,7 @@ A basic Chrome extension project template.
 
 ## Demo
 
-<video src="media/NoteExtensionDemo.mov" controls width="100%"></video>
+![Demo](media/NoteExtension.gif)
 
 ## Files
 
