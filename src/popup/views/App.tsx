@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ButtonGroup } from "@/components/ui/button-group";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Item,
@@ -21,6 +23,8 @@ export function App() {
   const [showAll, setShowAll] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editText, setEditText] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchMode, setSearchMode] = useState<"url" | "title">("url");
 
   useEffect(() => {
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
@@ -161,9 +165,12 @@ export function App() {
     );
   }
 
-  const visibleNotes = showAll
-    ? notes
-    : notes.filter((n) => n.url === currentUrl);
+  const pageNotes = notes.filter((n) => n.url === currentUrl);
+  const visibleNotes = searchQuery
+    ? pageNotes.filter((n) =>
+        n.selectedText.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : pageNotes;
 
   const grouped = notes.reduce<Record<string, PopupNote[]>>((acc, note) => {
     (acc[note.url] ??= []).push(note);
@@ -176,29 +183,88 @@ export function App() {
         <Button
           variant={showAll ? "default" : "outline"}
           size="sm"
-          onClick={() => setShowAll((prev) => !prev)}
+          onClick={() => {
+            setShowAll((prev) => !prev);
+            setSearchQuery("");
+            setSearchMode("url");
+          }}
         >
           {showAll ? "All pages" : "This page"}
         </Button>
       </div>
 
+      <div className="px-8 pt-3 pb-2">
+        <Input
+          type="search"
+          placeholder={showAll && searchMode === "url" ? "Search by URL..." : "Search by note title..."}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        {showAll && (
+          <ButtonGroup className="mt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className={searchMode === "url" ? "bg-muted" : ""}
+              onClick={() => { setSearchMode("url"); setSearchQuery(""); }}
+            >
+              URL
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className={searchMode === "title" ? "bg-muted" : ""}
+              onClick={() => { setSearchMode("title"); setSearchQuery(""); }}
+            >
+              Note
+            </Button>
+          </ButtonGroup>
+        )}
+      </div>
+
       <div className="flex flex-col gap-6 w-100 p-8 pt-4">
         {showAll ? (
-          Object.entries(grouped).map(([url, groupNotes]) => (
-            <div key={url}>
-              <p className="text-xs text-muted-foreground px-1 pb-2 truncate">
-                {url}
-              </p>
-              <ItemGroup className="flex flex-col gap-2">
-                {groupNotes.map(renderNote)}
-              </ItemGroup>
-            </div>
-          ))
+          (() => {
+            const filtered = searchMode === "url"
+              ? Object.entries(grouped).filter(([url]) =>
+                  url.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+              : Object.entries(grouped)
+                  .map(([url, groupNotes]) => [
+                    url,
+                    groupNotes.filter((n) =>
+                      n.selectedText.toLowerCase().includes(searchQuery.toLowerCase())
+                    ),
+                  ] as [string, PopupNote[]])
+                  .filter(([, groupNotes]) => groupNotes.length > 0);
+
+            if (filtered.length === 0) {
+              return (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  {searchMode === "url" ? "No notes match that URL." : "No notes match that title."}
+                </p>
+              );
+            }
+            return filtered.map(([url, groupNotes]) => (
+              <div key={url}>
+                <p className="text-xs text-muted-foreground px-1 pb-2 truncate">
+                  {url}
+                </p>
+                <ItemGroup className="flex flex-col gap-2">
+                  {groupNotes.map(renderNote)}
+                </ItemGroup>
+              </div>
+            ));
+          })()
         ) : (
           <ItemGroup className="flex flex-col gap-2">
-            {visibleNotes.length === 0 ? (
+            {pageNotes.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
                 No notes for this page.
+              </p>
+            ) : visibleNotes.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No notes match that title.
               </p>
             ) : (
               visibleNotes.map(renderNote)
