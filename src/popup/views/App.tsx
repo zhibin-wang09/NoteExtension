@@ -189,7 +189,7 @@ export function App() {
             setSearchMode("url");
           }}
         >
-          {showAll ? "All pages" : "This page"}
+          {showAll ? "This page" : "All pages"}
         </Button>
       </div>
 
@@ -247,9 +247,19 @@ export function App() {
             }
             return filtered.map(([url, groupNotes]) => (
               <div key={url}>
-                <p className="text-xs text-muted-foreground px-1 pb-2 truncate">
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    chrome.tabs.create({ url });
+                  }}
+                  className="text-xs text-muted-foreground hover:text-foreground px-1 pb-2 truncate block cursor-pointer hover:underline"
+                  title={url}
+                >
                   {url}
-                </p>
+                </a>
                 <ItemGroup className="flex flex-col gap-2">
                   {groupNotes.map(renderNote)}
                 </ItemGroup>
